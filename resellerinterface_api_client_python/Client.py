@@ -31,7 +31,7 @@ class Client:
         else:
             raise RuntimeError('Invalid version provided.')
 
-        self._client = httpx.Client()
+        self._client = httpx.AsyncClient()
 
         self.setUserAgent("api-client-python/" + __version__ + " python/" + platform.python_version())
         self.setOptions(options)
@@ -51,13 +51,13 @@ class Client:
                 return_value[new_prefix] = v
         return return_value
 
-    def __httpxWrapper(self, url, data):
+    async def __httpxWrapper(self, url, data):
         headers = {'user-agent': self._userAgent}
 
         if self._session:
             headers['cookie'] = "coreSID=" + self._session
 
-        response = self._client.post(url, data=data, headers=headers)
+        response = await self._client.post(url, data=data, headers=headers)
         if "set-cookie" in response.headers:
             match = re.search(r"coreSID=([^;]*)", response.headers['set-cookie'], re.IGNORECASE | re.MULTILINE)
             if match:
@@ -80,11 +80,11 @@ class Client:
 
     def setIpResolve(self, option):
         if option == self.IP_RESOLVE_V4:
-            self._client = httpx.Client(transport=httpx.HTTPTransport(local_address="0.0.0.0"))
+            self._client = httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"))
         elif option == self.IP_RESOLVE_V6:
-            self._client = httpx.Client(transport=httpx.HTTPTransport(local_address="::"))
+            self._client = httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(local_address="::"))
         else:
-            self._client = httpx.Client(transport=httpx.HTTPTransport())
+            self._client = httpx.AsyncClient(transport=httpx.AsyncHTTPTransport())
 
     def setUserAgent(self, option):
         self._userAgent = option
@@ -92,7 +92,7 @@ class Client:
     def getUserAgent(self):
         return self._userAgent
 
-    def login(self, username, password, resellerId=None):
+    async def login(self, username, password, resellerId=None):
         query = {
             'username': username,
             'password': password,
@@ -100,9 +100,9 @@ class Client:
         if resellerId:
             query['resellerId'] = resellerId
 
-        return self.request('reseller/login', query)
+        return await self.request('reseller/login', query)
 
-    def request(self, action, params, responseType=RESPONSE_RESPONSE):
+    async def request(self, action, params, responseType=RESPONSE_RESPONSE):
         action = action.strip("/")
         path = action.split("/")
 
@@ -113,7 +113,7 @@ class Client:
 
         data = self.__build_post_array(params)
 
-        response = self.__httpxWrapper(url + action, data)
+        response = await self.__httpxWrapper(url + action, data)
 
         if responseType == self.RESPONSE_RESPONSE:
             return ApiResponse(response.json())

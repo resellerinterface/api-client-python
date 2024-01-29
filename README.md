@@ -15,10 +15,10 @@ from resellerinterface_api_client_python import Client
 client = Client()
 
 # login
-client.login("username", "password", 1234)
+await client.login("username", "password", 1234)
 
 # make a request
-response = client.request("reseller/details", {"resellerID": "own"})
+response = await client.request("reseller/details", {"resellerID": "own"})
 print(response.getData())
 # response
 # {
